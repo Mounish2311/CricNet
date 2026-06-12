@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ScheduleMatch from '@/components/tournaments/ScheduleMatch';
+import Bracket from '@/components/tournaments/Bracket';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,6 +127,15 @@ export default async function TournamentDetail({ params }: { params: { id: strin
           )}
         </section>
       </div>
+
+      {(matches?.length ?? 0) > 0 && (
+        <section className="card">
+          <h2 className="font-semibold">Bracket</h2>
+          <div className="mt-4">
+            <Bracket matches={matches as any} />
+          </div>
+        </section>
+      )}
 
       <ScheduleMatch tournamentId={params.id} />
     </div>

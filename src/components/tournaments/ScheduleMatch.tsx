@@ -45,6 +45,7 @@ export default function ScheduleMatch({ tournamentId }: { tournamentId: string }
       team_a: teamIds[0],
       team_b: teamIds[1],
       overs_per_side: Number(form.get('overs')) || 20,
+      round: Number(form.get('round')) || 1,
       scheduled_at: String(form.get('scheduled_at') || '') || null,
     });
     setSaving(false);
@@ -59,9 +60,19 @@ export default function ScheduleMatch({ tournamentId }: { tournamentId: string }
         <input name="team_a" required placeholder="Team A" className="input" />
         <input name="team_b" required placeholder="Team B" className="input" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <input name="overs" type="number" min={1} max={50} defaultValue={20} className="input" />
-        <input name="scheduled_at" type="datetime-local" className="input" />
+      <div className="grid grid-cols-3 gap-3">
+        <label className="text-xs text-zinc-400">
+          Overs
+          <input name="overs" type="number" min={1} max={50} defaultValue={20} className="input mt-1" />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Round
+          <input name="round" type="number" min={1} max={6} defaultValue={1} className="input mt-1" />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Date &amp; time
+          <input name="scheduled_at" type="datetime-local" className="input mt-1" />
+        </label>
       </div>
       {error && <p className="text-sm text-leather-light">{error}</p>}
       <button disabled={saving} className="btn-pitch disabled:opacity-50">

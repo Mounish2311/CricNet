@@ -1,7 +1,14 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import Reveal from '@/components/ui/Reveal';
 
 const HeroScene = dynamic(() => import('@/components/three/HeroScene'), { ssr: false });
+
+const steps = [
+  { n: '01', title: 'Build your profile', body: 'Pick your role — player, coach, or scout — and showcase your game.' },
+  { n: '02', title: 'Play verified matches', body: 'Stats from ball-by-ball scored tournaments carry a verified badge scouts can trust.' },
+  { n: '03', title: 'Get discovered', body: 'Scouts filter by role, location, and skill level, then connect and message you directly.' },
+];
 
 const features = [
   {
@@ -53,12 +60,48 @@ export default function Home() {
       </section>
 
       <section className="mt-16 grid gap-6 sm:grid-cols-3">
-        {features.map((f) => (
-          <Link key={f.title} href={f.href} className="card transition hover:-translate-y-1">
-            <h2 className={`text-lg font-bold ${f.accent}`}>{f.title}</h2>
-            <p className="mt-2 text-sm text-zinc-300">{f.body}</p>
-          </Link>
+        {features.map((f, i) => (
+          <Reveal key={f.title} delay={i * 120}>
+            <Link href={f.href} className="card block h-full transition hover:-translate-y-1">
+              <h2 className={`text-lg font-bold ${f.accent}`}>{f.title}</h2>
+              <p className="mt-2 text-sm text-zinc-300">{f.body}</p>
+            </Link>
+          </Reveal>
         ))}
+      </section>
+
+      <section className="mt-24">
+        <Reveal>
+          <h2 className="text-center text-2xl font-bold">
+            From the local pitch to the <span className="text-pitch-light">scout&apos;s shortlist</span>
+          </h2>
+        </Reveal>
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          {steps.map((s, i) => (
+            <Reveal key={s.n} delay={i * 150}>
+              <div className="card h-full">
+                <span className="font-mono text-3xl font-bold text-stadium/40">{s.n}</span>
+                <h3 className="mt-2 font-semibold">{s.title}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{s.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-24">
+        <Reveal>
+          <div className="card flex flex-col items-center gap-4 bg-gradient-to-br from-night-card to-pitch-dark/40 py-12 text-center">
+            <h2 className="text-2xl font-bold">Stats that scouts can trust</h2>
+            <p className="max-w-lg text-sm text-zinc-300">
+              Unlike self-reported numbers, CricNet stats come from real, ball-by-ball scored
+              matches. Compare any two players head-to-head on verified data.
+            </p>
+            <Link href="/compare" className="btn-pitch">
+              Compare players
+            </Link>
+          </div>
+        </Reveal>
       </section>
     </>
   );

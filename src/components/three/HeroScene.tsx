@@ -5,12 +5,18 @@ import { Float, Stars } from '@react-three/drei';
 import { useRef } from 'react';
 import * as THREE from 'three';
 
+// The ball reacts to page scroll: spins faster, drifts up, and shrinks
+// as the user scrolls toward the content sections.
 function CricketBall() {
   const group = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
     if (!group.current) return;
-    group.current.rotation.y += delta * 0.6;
+    const progress = Math.min(window.scrollY / window.innerHeight, 1);
+    group.current.rotation.y += delta * (0.6 + progress * 3);
     group.current.rotation.x += delta * 0.15;
+    group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, progress * 1.6, 0.08);
+    const target = 1 - progress * 0.45;
+    group.current.scale.setScalar(THREE.MathUtils.lerp(group.current.scale.x, target, 0.08));
   });
   return (
     <group ref={group}>
