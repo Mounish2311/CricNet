@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-night text-zinc-100 antialiased;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(31, 122, 77, 0.18), transparent);
+}
+
+.card {
+  @apply rounded-2xl border border-night-edge bg-night-card p-5 shadow-floodlight;
+}
+
+.btn-pitch {
+  @apply rounded-lg bg-pitch px-4 py-2 font-semibold text-white transition hover:bg-pitch-light;
+}
+
+.btn-leather {
+  @apply rounded-lg bg-leather px-4 py-2 font-semibold text-white transition hover:bg-leather-light;
+}
+
+.input {
+  @apply w-full rounded-lg border border-night-edge bg-night px-3 py-2 text-sm outline-none focus:border-pitch;
+}
+
+/* 3D tilt player cards */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+}
+.tilt-card:hover {
+  box-shadow: 0 20px 50px rgba(31, 122, 77, 0.25);
+}
