@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useRef } from 'react';
 import type { Profile } from '@/lib/types';
+import ConnectButton from '@/components/network/ConnectButton';
+import MessageButton from '@/components/network/MessageButton';
 
 // LinkedIn-style profile card with a 3D tilt-on-hover effect
 export default function PlayerCard({ profile }: { profile: Profile }) {
@@ -53,8 +55,8 @@ export default function PlayerCard({ profile }: { profile: Profile }) {
         )}
       </div>
       <div className="mt-4 flex gap-2">
-        <button className="btn-pitch flex-1 text-sm">Connect</button>
-        <button className="btn-leather flex-1 text-sm">Message</button>
+        <ConnectButton targetId={profile.id} className="flex-1 text-sm" />
+        <MessageButton targetId={profile.id} className="flex-1 text-sm" />
       </div>
     </div>
   );

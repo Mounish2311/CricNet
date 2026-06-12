@@ -1,24 +1,37 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import StatBars3D from '@/components/three/StatBars3D';
+import ConnectButton from '@/components/network/ConnectButton';
+import MessageButton from '@/components/network/MessageButton';
+import VideoUpload from '@/components/profile/VideoUpload';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  const [{ data: profile }, { data: batting }, { data: bowling }, { data: endorsements }, { data: videos }] =
-    await Promise.all([
-      supabase.from('profiles').select('*').eq('id', params.id).single(),
-      supabase.from('verified_batting_stats').select('*').eq('profile_id', params.id).maybeSingle(),
-      supabase.from('verified_bowling_stats').select('*').eq('profile_id', params.id).maybeSingle(),
-      supabase
-        .from('endorsements')
-        .select('skill, comment, endorser:profiles!endorsements_endorser_id_fkey(full_name)')
-        .eq('endorsee_id', params.id),
-      supabase.from('videos').select('*').eq('profile_id', params.id),
-    ]);
+  const [
+    { data: profile },
+    { data: batting },
+    { data: bowling },
+    { data: endorsements },
+    { data: videos },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', params.id).single(),
+    supabase.from('verified_batting_stats').select('*').eq('profile_id', params.id).maybeSingle(),
+    supabase.from('verified_bowling_stats').select('*').eq('profile_id', params.id).maybeSingle(),
+    supabase
+      .from('endorsements')
+      .select('skill, comment, endorser:profiles!endorsements_endorser_id_fkey(full_name)')
+      .eq('endorsee_id', params.id),
+    supabase.from('videos').select('*').eq('profile_id', params.id),
+    supabase.auth.getUser(),
+  ]);
 
   if (!profile) notFound();
+  const isOwner = user?.id === params.id;
 
   const stats = [
     { label: `Matches ${batting?.matches ?? 0}`, value: Math.min((batting?.matches ?? 0) / 50, 1), color: '#2fae6f' },
@@ -42,10 +55,12 @@ export default async function ProfilePage({ params }: { params: { id: string } }
           </p>
           {profile.bio && <p className="mt-2 max-w-xl text-sm text-zinc-300">{profile.bio}</p>}
         </div>
-        <div className="flex gap-2">
-          <button className="btn-pitch">Connect</button>
-          <button className="btn-leather">Message</button>
-        </div>
+        {!isOwner && (
+          <div className="flex gap-2">
+            <ConnectButton targetId={profile.id} />
+            <MessageButton targetId={profile.id} />
+          </div>
+        )}
       </header>
 
       <section className="grid gap-6 lg:grid-cols-2">
@@ -80,16 +95,21 @@ export default async function ProfilePage({ params }: { params: { id: string } }
         <h2 className="font-semibold">Showcase videos</h2>
         {videos?.length ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {videos.map((v: any) => (
-              <div key={v.id} className="rounded-lg bg-night p-3 text-sm">
-                <p className="font-medium">{v.title}</p>
-                <p className="text-xs capitalize text-zinc-500">{v.category?.replaceAll('_', ' ')}</p>
-              </div>
-            ))}
+            {videos.map((v: any) => {
+              const { data: pub } = supabase.storage.from('videos').getPublicUrl(v.storage_path);
+              return (
+                <div key={v.id} className="rounded-lg bg-night p-3 text-sm">
+                  <video src={pub.publicUrl} controls className="mb-2 w-full rounded" preload="metadata" />
+                  <p className="font-medium">{v.title}</p>
+                  <p className="text-xs capitalize text-zinc-500">{v.category?.replaceAll('_', ' ')}</p>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="mt-3 text-sm text-zinc-400">No videos uploaded yet.</p>
         )}
+        {isOwner && <VideoUpload profileId={profile.id} />}
       </section>
     </div>
   );

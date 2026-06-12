@@ -4,6 +4,8 @@ const links = [
   { href: '/talent', label: 'Talent Feed' },
   { href: '/dashboard', label: 'Live Scores' },
   { href: '/tournaments', label: 'Tournaments' },
+  { href: '/connections', label: 'Connections' },
+  { href: '/messages', label: 'Messages' },
 ];
 
 export default function Navbar() {
