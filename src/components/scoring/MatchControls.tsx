@@ -40,7 +40,6 @@ export default function MatchControls({
   }
 
   if (status === 'completed') {
-    const name = winner || (teamA && teamB ? '' : '');
     return (
       <div className="card flex items-center justify-between">
         <span className="text-sm text-zinc-300">Match completed</span>
