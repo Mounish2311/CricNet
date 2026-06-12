@@ -6,10 +6,24 @@ import type { BallEvent } from '@/lib/types';
 
 const RUN_OPTIONS = [0, 1, 2, 3, 4, 6];
 const EXTRA_TYPES = ['', 'wide', 'no_ball', 'bye', 'leg_bye'] as const;
+const DISMISSALS = ['bowled', 'caught', 'lbw', 'run_out', 'stumped', 'hit_wicket'];
 
-// Ball-by-ball live scoring entry. Each submission persists a ball event;
-// verified player stats are derived from these rows via SQL views.
-export default function BallEntry({ matchId }: { matchId: string }) {
+export interface RosterPlayer {
+  id: string;
+  name: string;
+  teamName: string;
+}
+
+// Ball-by-ball live scoring entry. Each submission persists a ball event
+// with batter/bowler attribution; verified player stats are derived from
+// these rows via SQL views.
+export default function BallEntry({
+  matchId,
+  players,
+}: {
+  matchId: string;
+  players: RosterPlayer[];
+}) {
   const supabase = createClient();
   const [innings, setInnings] = useState<1 | 2>(1);
   const [over, setOver] = useState(0);
@@ -17,8 +31,13 @@ export default function BallEntry({ matchId }: { matchId: string }) {
   const [runs, setRuns] = useState(0);
   const [extraType, setExtraType] = useState<string>('');
   const [isWicket, setIsWicket] = useState(false);
+  const [dismissal, setDismissal] = useState('bowled');
+  const [batterId, setBatterId] = useState('');
+  const [bowlerId, setBowlerId] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? 'Unknown';
 
   async function submit() {
     setSaving(true);
@@ -27,10 +46,13 @@ export default function BallEntry({ matchId }: { matchId: string }) {
       innings,
       over_number: over,
       ball_number: ball,
+      batter_id: batterId || undefined,
+      bowler_id: bowlerId || undefined,
       runs,
       extras: extraType ? 1 : 0,
       extra_type: (extraType || null) as BallEvent['extra_type'],
       is_wicket: isWicket,
+      dismissal_type: isWicket ? dismissal : null,
     };
     const { error } = await supabase.from('balls').insert(event);
     setSaving(false);
@@ -38,8 +60,11 @@ export default function BallEntry({ matchId }: { matchId: string }) {
       setLog((l) => [`Error: ${error.message}`, ...l]);
       return;
     }
+    const who = batterId ? ` · ${nameOf(batterId)}` : '';
     setLog((l) => [
-      `${over}.${ball} — ${isWicket ? 'WICKET' : `${runs} run(s)`}${extraType ? ` (${extraType})` : ''}`,
+      `${over}.${ball} — ${isWicket ? `WICKET (${dismissal})` : `${runs} run(s)`}${
+        extraType ? ` (${extraType})` : ''
+      }${who}`,
       ...l,
     ]);
     // Advance ball counter; wides/no-balls do not consume a legal delivery
@@ -72,6 +97,37 @@ export default function BallEntry({ matchId }: { matchId: string }) {
           <option value={2}>Innings 2</option>
         </select>
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="text-xs text-zinc-400">
+          On strike (batter)
+          <select className="input mt-1" value={batterId} onChange={(e) => setBatterId(e.target.value)}>
+            <option value="">Unattributed</option>
+            {players.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.teamName})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-zinc-400">
+          Bowler
+          <select className="input mt-1" value={bowlerId} onChange={(e) => setBowlerId(e.target.value)}>
+            <option value="">Unattributed</option>
+            {players.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.teamName})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!players.length && (
+        <p className="text-xs text-stadium">
+          Add players to team rosters below to attribute balls and build verified stats.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
         {RUN_OPTIONS.map((r) => (
           <button
@@ -95,7 +151,8 @@ export default function BallEntry({ matchId }: { matchId: string }) {
           W
         </button>
       </div>
-      <div className="flex items-center gap-3">
+
+      <div className="flex flex-wrap items-center gap-3">
         <select className="input w-auto" value={extraType} onChange={(e) => setExtraType(e.target.value)}>
           {EXTRA_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -103,10 +160,20 @@ export default function BallEntry({ matchId }: { matchId: string }) {
             </option>
           ))}
         </select>
+        {isWicket && (
+          <select className="input w-auto" value={dismissal} onChange={(e) => setDismissal(e.target.value)}>
+            {DISMISSALS.map((d) => (
+              <option key={d} value={d}>
+                {d.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </select>
+        )}
         <button onClick={submit} disabled={saving} className="btn-pitch disabled:opacity-50">
           {saving ? 'Saving…' : 'Record ball'}
         </button>
       </div>
+
       <ul className="max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-400">
         {log.map((entry, i) => (
           <li key={i}>{entry}</li>

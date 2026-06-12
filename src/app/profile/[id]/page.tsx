@@ -4,6 +4,7 @@ import StatBars3D from '@/components/three/StatBars3D';
 import ConnectButton from '@/components/network/ConnectButton';
 import MessageButton from '@/components/network/MessageButton';
 import VideoUpload from '@/components/profile/VideoUpload';
+import EndorseForm from '@/components/profile/EndorseForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,7 @@ export default async function ProfilePage({ params }: { params: { id: string } }
           ) : (
             <p className="mt-3 text-sm text-zinc-400">No endorsements yet.</p>
           )}
+          {!isOwner && user && <EndorseForm endorseeId={profile.id} />}
         </div>
       </section>
 
