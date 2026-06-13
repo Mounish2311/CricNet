@@ -4,11 +4,21 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
 
-// A single cricket ball that travels DOWN the page as the user scrolls,
-// rolling as it goes. Rendered in a fixed, full-viewport canvas behind the
-// content (pointer-events-none) so one continuous ball ties the whole
-// landing scroll together — the Bugatti-style "object follows you down" feel.
-function RollingBall() {
+// Two cricket balls travel DOWN the page as the user scrolls, rolling as they
+// go. Rendered in a fixed, full-viewport canvas behind the content
+// (pointer-events-none) so they tie the whole landing scroll together — the
+// "object follows you down" feel. The white Kookaburra and the red leather
+// ball drift on mirrored S-curves (dir = +1 / -1), crossing past each other.
+interface BallProps {
+  bodyColor: string;
+  seamColor: string;
+  stitchColor: string;
+  dir: 1 | -1; // +1 = white's path, -1 = mirrored (opposite) path
+  scale: number;
+  startX: number; // initial X so the two don't spawn on top of each other
+}
+
+function RollingBall({ bodyColor, seamColor, stitchColor, dir, scale, startX }: BallProps) {
   const group = useRef<THREE.Group>(null);
 
   useFrame((state, delta) => {
@@ -24,33 +34,34 @@ function RollingBall() {
     const targetY = THREE.MathUtils.lerp(topY, bottomY, progress);
     group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, targetY, 0.1);
 
-    // Drift gently left<->right across the page as it descends (S-curve).
-    const targetX = Math.sin(progress * Math.PI * 1.5) * 2.2;
+    // Drift left<->right across the page as it descends (S-curve). dir flips
+    // the curve so the red ball mirrors the white one.
+    const targetX = dir * Math.sin(progress * Math.PI * 1.5) * 2.2;
     group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, targetX, 0.1);
 
-    // Roll: rotation tied to how far it has travelled, plus a little idle spin.
-    group.current.rotation.z = -progress * Math.PI * 6;
-    group.current.rotation.y += delta * 0.4;
+    // Roll: rotation tied to travel, direction matched to drift, plus idle spin.
+    group.current.rotation.z = -dir * progress * Math.PI * 6;
+    group.current.rotation.y += dir * delta * 0.4;
   });
 
   return (
-    <group ref={group} position={[0, 3, 0]}>
+    <group ref={group} position={[startX, 3, 0]} scale={scale}>
       <mesh>
         <sphereGeometry args={[0.7, 64, 64]} />
-        <meshStandardMaterial color="#8b1a1a" roughness={0.35} metalness={0.05} />
+        <meshStandardMaterial color={bodyColor} roughness={0.45} metalness={0.05} />
       </mesh>
-      {/* Seam stitching rings */}
+      {/* Dark seam + raised stitching rows (the "grip") */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.703, 0.01, 16, 128]} />
-        <meshStandardMaterial color="#f5f0e6" roughness={0.6} />
+        <torusGeometry args={[0.704, 0.022, 16, 160]} />
+        <meshStandardMaterial color={seamColor} roughness={0.7} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-        <torusGeometry args={[0.699, 0.005, 16, 128]} />
-        <meshStandardMaterial color="#f5f0e6" roughness={0.6} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.055, 0]}>
+        <torusGeometry args={[0.7, 0.01, 16, 160]} />
+        <meshStandardMaterial color={stitchColor} roughness={0.75} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-        <torusGeometry args={[0.699, 0.005, 16, 128]} />
-        <meshStandardMaterial color="#f5f0e6" roughness={0.6} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.055, 0]}>
+        <torusGeometry args={[0.7, 0.01, 16, 160]} />
+        <meshStandardMaterial color={stitchColor} roughness={0.75} />
       </mesh>
     </group>
   );
@@ -63,7 +74,24 @@ export default function ScrollBall() {
         <ambientLight intensity={0.4} />
         <spotLight position={[5, 8, 5]} intensity={120} color="#fff3c4" angle={0.4} />
         <spotLight position={[-5, 6, -3]} intensity={60} color="#9fffcf" angle={0.5} />
-        <RollingBall />
+        {/* White Kookaburra */}
+        <RollingBall
+          bodyColor="#f4f5f1"
+          seamColor="#1c1c1c"
+          stitchColor="#2a2a2a"
+          dir={1}
+          scale={0.62}
+          startX={0}
+        />
+        {/* Red leather, mirrored opposite path */}
+        <RollingBall
+          bodyColor="#9e1b1b"
+          seamColor="#f5f0e6"
+          stitchColor="#e8e0cf"
+          dir={-1}
+          scale={0.62}
+          startX={0}
+        />
       </Canvas>
     </div>
   );
