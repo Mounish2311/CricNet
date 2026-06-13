@@ -39,3 +39,17 @@ export interface LiveMatch {
   matchEnded: boolean;
   source: 'live' | 'mock';
 }
+
+export type NewsScope = 'international' | 'national' | 'local';
+
+export interface NewsItem {
+  id: string;
+  scope: NewsScope;
+  title: string;
+  summary: string;
+  source: string;
+  url: string;
+  imageUrl: string | null;
+  publishedAt: string; // ISO date
+  origin: 'live' | 'mock';
+}

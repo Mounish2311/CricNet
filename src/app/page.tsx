@@ -1,8 +1,14 @@
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import Link from 'next/link';
 import Reveal from '@/components/ui/Reveal';
+import SmoothScroll from '@/components/landing/SmoothScroll';
+import MomentsGallery from '@/components/landing/MomentsGallery';
+import NewsSections from '@/components/landing/NewsSections';
+import { getCricketNews } from '@/lib/news/api';
 
-const HeroScene = dynamic(() => import('@/components/three/HeroScene'), { ssr: false });
+const ScrollBall = nextDynamic(() => import('@/components/three/ScrollBall'), { ssr: false });
+
+export const dynamic = 'force-dynamic';
 
 const steps = [
   { n: '01', title: 'Build your profile', body: 'Pick your role — player, coach, or scout — and showcase your game.' },
@@ -31,35 +37,27 @@ const features = [
   },
 ];
 
-export default function Home() {
-  return (
-    <>
-      <section className="relative -mx-4 flex h-[80vh] items-center justify-center overflow-hidden">
-        <HeroScene />
-        <div className="pointer-events-none relative z-10 text-center">
-          <h1 className="font-display text-5xl font-extrabold tracking-tight sm:text-7xl">
-            Where cricket careers
-            <br />
-            <span className="bg-gradient-to-r from-pitch-light via-stadium to-leather-light bg-clip-text text-transparent">
-              get discovered
-            </span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-zinc-300">
-            The professional network for players, coaches, and scouts. Showcase verified talent,
-            track live scores, and run grassroots tournaments.
-          </p>
-          <div className="pointer-events-auto mt-8 flex justify-center gap-3">
-            <Link href="/signup" className="btn-pitch">
-              Create your profile
-            </Link>
-            <Link href="/talent" className="btn-leather">
-              Scout talent
-            </Link>
-          </div>
-        </div>
-      </section>
+export default async function Home() {
+  const news = await getCricketNews();
 
-      <section className="mt-16 grid gap-6 sm:grid-cols-3">
+  return (
+    <SmoothScroll>
+      {/* Cricket ball that rolls down the page as you scroll */}
+      <ScrollBall />
+
+      {/* Hero — floating glorious moments of Indian cricket */}
+      <MomentsGallery />
+
+      <div className="mt-8 flex justify-center gap-3">
+        <Link href="/signup" className="btn-pitch">
+          Create your profile
+        </Link>
+        <Link href="/talent" className="btn-leather">
+          Scout talent
+        </Link>
+      </div>
+
+      <section className="mt-24 grid gap-6 sm:grid-cols-3">
         {features.map((f, i) => (
           <Reveal key={f.title} delay={i * 120}>
             <Link href={f.href} className="card block h-full transition hover:-translate-y-1">
@@ -103,6 +101,9 @@ export default function Home() {
           </div>
         </Reveal>
       </section>
-    </>
+
+      {/* Latest cricket news — International / National / Local */}
+      <NewsSections items={news} />
+    </SmoothScroll>
   );
 }

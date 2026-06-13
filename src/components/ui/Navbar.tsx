@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 const links = [
   { href: '/talent', label: 'Talent Feed' },
@@ -7,6 +8,7 @@ const links = [
   { href: '/compare', label: 'Compare' },
   { href: '/connections', label: 'Connections' },
   { href: '/messages', label: 'Messages' },
+  { href: '/#news', label: 'News' },
 ];
 
 export default function Navbar() {
@@ -14,8 +16,17 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-night-edge bg-night/80 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-          <span className="inline-block h-3 w-3 rounded-full bg-leather shadow-[0_0_10px_rgba(192,57,43,0.8)]" />
-          Cric<span className="text-pitch-light">Net</span>
+          <Image
+            src="/cricnet-logo.png"
+            alt="CricNet logo"
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8 rounded-full object-contain"
+          />
+          <span className="bg-gradient-to-r from-[#FF9933] via-white to-[#138808] bg-clip-text text-transparent">
+            CricNet
+          </span>
         </Link>
         <div className="hidden gap-6 text-sm text-zinc-300 sm:flex">
           {links.map((l) => (

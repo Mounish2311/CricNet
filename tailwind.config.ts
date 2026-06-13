@@ -11,7 +11,8 @@ const config: Config = {
         night: { DEFAULT: '#0a0f0c', card: '#111813', edge: '#1d2a21' },
       },
       fontFamily: {
-        display: ['var(--font-display)', 'sans-serif'],
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         floodlight: '0 0 40px rgba(245, 215, 122, 0.15)',
