@@ -33,13 +33,25 @@ export default function BallEntry({
   const [isWicket, setIsWicket] = useState(false);
   const [dismissal, setDismissal] = useState('bowled');
   const [batterId, setBatterId] = useState('');
+  const [nonStrikerId, setNonStrikerId] = useState('');
   const [bowlerId, setBowlerId] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? 'Unknown';
 
+  // When a roster exists, every ball must be attributed so it feeds verified
+  // stats — otherwise it silently counts toward nobody. Without a roster
+  // (e.g. a practice match), unattributed scoring is still allowed.
+  const hasRoster = players.length > 0;
+  const missing: string[] = [];
+  if (hasRoster && !batterId) missing.push('striker');
+  if (hasRoster && !bowlerId) missing.push('bowler');
+  const sameBatter = !!batterId && batterId === nonStrikerId;
+  const canRecord = !saving && missing.length === 0 && !sameBatter;
+
   async function submit() {
+    if (!canRecord) return;
     setSaving(true);
     const event: BallEvent = {
       match_id: matchId,
@@ -69,12 +81,24 @@ export default function BallEntry({
     ]);
     // Advance ball counter; wides/no-balls do not consume a legal delivery
     const legal = !extraType || extraType === 'bye' || extraType === 'leg_bye';
+    let endOfOver = false;
     if (legal) {
       if (ball === 6) {
         setOver(over + 1);
         setBall(1);
+        endOfOver = true;
       } else {
         setBall(ball + 1);
+      }
+    }
+    // Strike rotation: batters cross on odd runs, and ends swap at over's end
+    // (not on a wicket — the scorer selects the incoming batter manually).
+    if (legal && !isWicket) {
+      const crossed = runs % 2 === 1;
+      const swap = crossed !== endOfOver; // XOR: both true cancels out
+      if (swap && nonStrikerId) {
+        setBatterId(nonStrikerId);
+        setNonStrikerId(batterId);
       }
     }
     setRuns(0);
@@ -98,11 +122,15 @@ export default function BallEntry({
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <label className="text-xs text-zinc-400">
-          On strike (batter)
-          <select className="input mt-1" value={batterId} onChange={(e) => setBatterId(e.target.value)}>
-            <option value="">Unattributed</option>
+          On strike{hasRoster && <span className="text-leather-light"> *</span>}
+          <select
+            className={`input mt-1 ${hasRoster && !batterId ? 'border-leather' : ''}`}
+            value={batterId}
+            onChange={(e) => setBatterId(e.target.value)}
+          >
+            <option value="">{hasRoster ? 'Select striker' : 'Unattributed'}</option>
             {players.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.teamName})
@@ -111,9 +139,30 @@ export default function BallEntry({
           </select>
         </label>
         <label className="text-xs text-zinc-400">
-          Bowler
-          <select className="input mt-1" value={bowlerId} onChange={(e) => setBowlerId(e.target.value)}>
-            <option value="">Unattributed</option>
+          Non-striker
+          <select
+            className="input mt-1"
+            value={nonStrikerId}
+            onChange={(e) => setNonStrikerId(e.target.value)}
+          >
+            <option value="">Optional</option>
+            {players
+              .filter((p) => p.id !== batterId)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.teamName})
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="text-xs text-zinc-400">
+          Bowler{hasRoster && <span className="text-leather-light"> *</span>}
+          <select
+            className={`input mt-1 ${hasRoster && !bowlerId ? 'border-leather' : ''}`}
+            value={bowlerId}
+            onChange={(e) => setBowlerId(e.target.value)}
+          >
+            <option value="">{hasRoster ? 'Select bowler' : 'Unattributed'}</option>
             {players.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.teamName})
@@ -122,9 +171,14 @@ export default function BallEntry({
           </select>
         </label>
       </div>
-      {!players.length && (
+      {!hasRoster && (
         <p className="text-xs text-stadium">
           Add players to team rosters below to attribute balls and build verified stats.
+        </p>
+      )}
+      {sameBatter && (
+        <p className="text-xs text-leather-light">
+          Striker and non-striker can&apos;t be the same player.
         </p>
       )}
 
@@ -169,9 +223,12 @@ export default function BallEntry({
             ))}
           </select>
         )}
-        <button onClick={submit} disabled={saving} className="btn-pitch disabled:opacity-50">
+        <button onClick={submit} disabled={!canRecord} className="btn-pitch disabled:opacity-50">
           {saving ? 'Saving…' : 'Record ball'}
         </button>
+        {missing.length > 0 && (
+          <span className="text-xs text-leather-light">Select {missing.join(' & ')} first</span>
+        )}
       </div>
 
       <ul className="max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-400">
