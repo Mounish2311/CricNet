@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
 import StatBars3D from '@/components/three/StatBars3D';
 import ConnectButton from '@/components/network/ConnectButton';
 import MessageButton from '@/components/network/MessageButton';
 import VideoUpload from '@/components/profile/VideoUpload';
 import EndorseForm from '@/components/profile/EndorseForm';
+import EditProfile from '@/components/profile/EditProfile';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +36,20 @@ export default async function ProfilePage({ params }: { params: { id: string } }
   if (!profile) notFound();
   const isOwner = user?.id === params.id;
 
+  // Is the viewer connected to this profile? Only connected users can message
+  // (enforced in the DB too). null = not logged in or viewing own profile.
+  let connectionStatus: 'accepted' | 'pending' | null = null;
+  if (user && !isOwner) {
+    const { data: conn } = await supabase
+      .from('connections')
+      .select('status')
+      .or(
+        `and(requester_id.eq.${user.id},addressee_id.eq.${params.id}),and(requester_id.eq.${params.id},addressee_id.eq.${user.id})`
+      )
+      .maybeSingle();
+    if (conn?.status === 'accepted' || conn?.status === 'pending') connectionStatus = conn.status;
+  }
+
   const stats = [
     { label: `Matches ${batting?.matches ?? 0}`, value: Math.min((batting?.matches ?? 0) / 50, 1), color: '#2fae6f' },
     { label: `Runs ${batting?.runs ?? 0}`, value: Math.min((batting?.runs ?? 0) / 1000, 1), color: '#f5d77a' },
@@ -44,8 +60,20 @@ export default async function ProfilePage({ params }: { params: { id: string } }
   return (
     <div className="mt-10 space-y-6">
       <header className="card flex flex-wrap items-center gap-5">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-pitch-dark text-3xl font-bold text-pitch-light">
-          {profile.full_name.charAt(0)}
+        <div className="relative h-20 w-20 overflow-hidden rounded-full bg-pitch-dark">
+          {profile.avatar_url ? (
+            <Image
+              src={profile.avatar_url}
+              alt={profile.full_name}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-pitch-light">
+              {profile.full_name.charAt(0)}
+            </span>
+          )}
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{profile.full_name}</h1>
@@ -56,11 +84,16 @@ export default async function ProfilePage({ params }: { params: { id: string } }
           </p>
           {profile.bio && <p className="mt-2 max-w-xl text-sm text-zinc-300">{profile.bio}</p>}
         </div>
-        {!isOwner && (
-          <div className="flex gap-2">
-            <ConnectButton targetId={profile.id} />
-            <MessageButton targetId={profile.id} />
-          </div>
+        {isOwner ? (
+          <EditProfile profile={profile} />
+        ) : connectionStatus === 'accepted' ? (
+          <MessageButton targetId={profile.id} />
+        ) : connectionStatus === 'pending' ? (
+          <span className="rounded-lg border border-night-edge px-4 py-2 text-sm text-zinc-400">
+            Request pending
+          </span>
+        ) : (
+          <ConnectButton targetId={profile.id} />
         )}
       </header>
 

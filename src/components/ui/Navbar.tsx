@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import AuthNav from '@/components/ui/AuthNav';
 
 const links = [
   { href: '/talent', label: 'Talent Feed' },
@@ -36,12 +37,7 @@ export default function Navbar() {
           ))}
         </div>
         <div className="flex gap-2">
-          <Link href="/login" className="px-3 py-1.5 text-sm text-zinc-300 hover:text-white">
-            Log in
-          </Link>
-          <Link href="/signup" className="btn-pitch text-sm">
-            Join CricNet
-          </Link>
+          <AuthNav />
         </div>
       </nav>
     </header>

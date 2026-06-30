@@ -24,19 +24,32 @@ export default function MatchControls({
   const router = useRouter();
   const [winner, setWinner] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   async function start() {
+    if (pending) return;
+    setPending(true);
     const { error } = await supabase.from('matches').update({ status: 'live' }).eq('id', matchId);
-    error ? setError(error.message) : router.refresh();
+    if (error) {
+      setPending(false);
+      return setError(error.message);
+    }
+    router.refresh();
   }
 
   async function complete() {
+    if (pending) return;
     if (!winner) return setError('Select the winning team first.');
+    setPending(true);
     const { error } = await supabase
       .from('matches')
       .update({ status: 'completed', winner_team: winner })
       .eq('id', matchId);
-    error ? setError(error.message) : router.refresh();
+    if (error) {
+      setPending(false);
+      return setError(error.message);
+    }
+    router.refresh();
   }
 
   if (status === 'completed') {

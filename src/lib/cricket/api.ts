@@ -1,5 +1,6 @@
 import type { LiveMatch } from '@/lib/types';
 import { mockLiveMatches } from './mock-data';
+import { classifyMatch } from './classify';
 
 const TTL = (Number(process.env.CRICKET_CACHE_TTL) || 60) * 1000;
 
@@ -33,7 +34,7 @@ export async function getLiveMatches(): Promise<LiveMatch[]> {
   try {
     const res = await fetch(
       `https://api.cricapi.com/v1/currentMatches?apikey=${key}&offset=0`,
-      { next: { revalidate: 0 } }
+      { next: { revalidate: 0 }, signal: AbortSignal.timeout(8000) }
     );
     if (!res.ok) throw new Error(`CricAPI ${res.status}`);
     const json = await res.json();
@@ -46,6 +47,8 @@ export async function getLiveMatches(): Promise<LiveMatch[]> {
       status: m.status,
       venue: m.venue ?? '',
       teams: m.teams ?? [],
+      category: classifyMatch(m.name ?? '', m.teams ?? []),
+      matchType: m.matchType,
       score: (m.score ?? []).map((s: any) => ({
         inning: s.inning,
         r: s.r,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -20,6 +21,8 @@ export default function Conversation() {
   const [otherName, setOtherName] = useState('Conversation');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [body, setBody] = useState('');
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function load(uid: string) {
@@ -46,6 +49,18 @@ export default function Conversation() {
         .eq('id', otherId)
         .single();
       if (p) setOtherName(p.full_name);
+
+      // Only connected users can message (DB-enforced). Check the connection
+      // so we can show a clear gate instead of letting a send silently fail.
+      const { data: conn } = await supabase
+        .from('connections')
+        .select('status')
+        .or(
+          `and(requester_id.eq.${user.id},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${user.id})`
+        )
+        .maybeSingle();
+      setConnected(conn?.status === 'accepted');
+
       load(user.id);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,10 +76,15 @@ export default function Conversation() {
     const { error } = await supabase
       .from('messages')
       .insert({ sender_id: me, recipient_id: otherId, body: body.trim() });
-    if (!error) {
-      setBody('');
-      load(me);
+    if (error) {
+      // RLS rejects the insert if the two aren't connected.
+      setError('You can only message people you are connected with.');
+      setConnected(false);
+      return;
     }
+    setError(null);
+    setBody('');
+    load(me);
   }
 
   return (
@@ -83,20 +103,34 @@ export default function Conversation() {
             {m.body}
           </div>
         ))}
-        {!messages.length && (
+        {!messages.length && connected && (
           <p className="text-sm text-zinc-500">Start the conversation — say hello!</p>
         )}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={send} className="mt-3 flex gap-2">
-        <input
-          className="input"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Write a message…"
-        />
-        <button className="btn-pitch">Send</button>
-      </form>
+      {connected === false ? (
+        <div className="mt-3 rounded-lg border border-night-edge bg-night p-4 text-center text-sm text-zinc-400">
+          {error ?? (
+            <>
+              You can only message people you&apos;re connected with. Send{' '}
+              <Link href={`/profile/${otherId}`} className="text-pitch-light">
+                {otherName}
+              </Link>{' '}
+              a connection request first.
+            </>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={send} className="mt-3 flex gap-2">
+          <input
+            className="input"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Write a message…"
+          />
+          <button className="btn-pitch">Send</button>
+        </form>
+      )}
     </div>
   );
 }

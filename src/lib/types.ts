@@ -28,12 +28,16 @@ export interface BallEvent {
   dismissal_type?: string | null;
 }
 
+export type MatchCategory = 'international' | 'league' | 'domestic' | 'women';
+
 export interface LiveMatch {
   id: string;
   name: string;
   status: string;
   venue: string;
   teams: string[];
+  category: MatchCategory;
+  matchType?: string;
   score: { inning: string; r: number; w: number; o: number }[];
   matchStarted: boolean;
   matchEnded: boolean;

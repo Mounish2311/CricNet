@@ -19,6 +19,24 @@ export default async function TalentFeed({ searchParams }: Props) {
   if (searchParams.location) query = query.ilike('location', `%${searchParams.location}%`);
 
   const { data: profiles } = await query;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Map of other-user-id -> connection status, so each card knows whether to
+  // show Connect, a pending state, or Message (only connected users can DM).
+  const statusByPerson = new Map<string, 'accepted' | 'pending'>();
+  if (user) {
+    const { data: conns } = await supabase
+      .from('connections')
+      .select('requester_id, addressee_id, status');
+    for (const c of conns ?? []) {
+      const other = c.requester_id === user.id ? c.addressee_id : c.requester_id;
+      if (c.status === 'accepted') statusByPerson.set(other, 'accepted');
+      else if (c.status === 'pending' && !statusByPerson.has(other))
+        statusByPerson.set(other, 'pending');
+    }
+  }
 
   return (
     <div className="mt-10 space-y-6">
@@ -29,7 +47,12 @@ export default async function TalentFeed({ searchParams }: Props) {
       {profiles?.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(profiles as Profile[]).map((p) => (
-            <PlayerCard key={p.id} profile={p} />
+            <PlayerCard
+              key={p.id}
+              profile={p}
+              currentUserId={user?.id ?? null}
+              connectionStatus={statusByPerson.get(p.id) ?? null}
+            />
           ))}
         </div>
       ) : (
