@@ -91,3 +91,4 @@ practice matches with no roster allow unattributed scoring.
 - Longer live-score results history (beyond CricAPI's current window)
 - Tournament brackets, standings, and richer scheduling
 - Realtime message delivery (Supabase Realtime)
+# Force rebuild for logo update
