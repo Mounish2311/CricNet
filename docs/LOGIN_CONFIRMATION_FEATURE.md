@@ -1,7 +1,11 @@
 # Login Confirmation Security Feature
 
 ## Overview
-CricNet now sends login confirmation emails when a user logs in from a new device. This is a conditional security feature that only sends emails for new devices, not on every login.
+CricNet sends login confirmation emails via **Resend** when a user logs in from a new device. This is a conditional security feature that only sends emails for new devices, not on every login.
+
+**Email Provider:** Resend (https://resend.com)
+**Free Tier:** 100 emails/day
+**Billing:** Pay-as-you-go after free tier
 
 ## How It Works
 
@@ -10,15 +14,37 @@ CricNet now sends login confirmation emails when a user logs in from a new devic
 - A SHA-256 hash of this combination creates a unique fingerprint
 - New devices are detected by comparing against previously recorded fingerprints
 
-### Email Trigger
-Confirmation emails are sent **only when**:
-- User logs in from a device that hasn't been used before
-- The email includes device name (e.g., "Chrome on Windows"), timestamp, and IP address
-- Users can verify the login or reset their password if unauthorized
+## How It Works in Practice
 
-### Device Recording
-- First login from a device: records session and sends email
-- Subsequent logins from same device: updates last_login_at, no email sent
+### Scenario 1: New Device Login (First Time)
+1. User clicks "Login with Google" on Chrome Desktop
+2. Auth callback is triggered with OAuth code
+3. Device fingerprint created: SHA-256(Chrome user agent + IP address)
+4. System checks `login_sessions` table for this fingerprint
+5. **New device detected** → `/api/auth/send-login-confirmation` is called
+6. Email sent via Resend with:
+   - Device: "Chrome on Windows"
+   - Timestamp: "July 1, 2026 11:30 AM"
+   - IP Address: "203.0.113.45"
+   - Password reset link (if needed)
+7. User logs in successfully ✅
+8. Session record created in `login_sessions` table
+
+### Scenario 2: Repeat Device Login (Same Device)
+1. User logs in again from same Chrome Desktop after 2 days
+2. Device fingerprint is identical (same user agent + IP)
+3. System finds existing record in `login_sessions`
+4. **Known device** → `last_login_at` updated, no email sent
+5. User logs in successfully ✅
+6. Console logs: "New device login: user@email.com from Chrome on Windows"
+
+### Error Handling
+- **Missing RESEND_API_KEY:** Email service gracefully skipped, login still works
+- **Email send fails:** Login succeeds, error logged to console
+- **Database unavailable:** Session tracking fails safely, login continues
+- **Invalid device fingerprint data:** Falls back to "Unknown device"
+
+**Design principle:** Security feature never blocks user login
 
 ## Database Schema
 
@@ -37,11 +63,12 @@ Confirmation emails are sent **only when**:
 ## Implementation Details
 
 ### Files Added/Modified
-- `supabase/migrations/0005_login_sessions.sql` - Database migration
-- `src/lib/auth/login-session.ts` - Device fingerprinting & session tracking
-- `src/lib/auth/email-templates.ts` - Email template generation
-- `src/app/auth/callback/route.ts` - Updated to track sessions and trigger emails
-- `src/app/api/auth/send-login-confirmation/route.ts` - API endpoint for sending emails
+- `supabase/migrations/0005_login_sessions.sql` - Database migration for login_sessions table
+- `src/lib/auth/login-session.ts` - Device fingerprinting & session tracking logic
+- `src/lib/auth/email-templates.ts` - Email template generation (HTML + plain text)
+- `src/app/auth/callback/route.ts` - Updated OAuth callback to track devices and trigger emails
+- `src/app/api/auth/send-login-confirmation/route.ts` - API endpoint for sending emails via Resend
+- `.env.example` - Updated with RESEND_API_KEY documentation
 
 ### Key Functions
 
@@ -61,10 +88,23 @@ Confirmation emails are sent **only when**:
 ## Environment Variables Required
 
 ```env
+# Supabase configuration (already configured)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-NEXT_PUBLIC_APP_URL=https://your-app-url.com (for email links)
+
+# Resend email service (REQUIRED for emails to work)
+RESEND_API_KEY=your-resend-api-key
 ```
+
+### Setup Instructions
+
+1. **Sign up for Resend:** https://resend.com (free tier available)
+2. **Create API key** in Resend dashboard
+3. **Add to `.env.local`:** `RESEND_API_KEY=your-key-here`
+4. **Add to Vercel:** Settings → Environment Variables → Add `RESEND_API_KEY`
+5. **Redeploy** on Vercel
+
+**Note:** `.env.local` is in `.gitignore` and will never be committed to GitHub.
 
 ## Email Content
 Users receive an email with:
