@@ -54,7 +54,22 @@ export async function GET(request: NextRequest) {
   // Log new device login for security tracking
   if (sessionResult.isNewDevice) {
     console.log(`New device login: ${data.user.email} from ${sessionResult.deviceName}`);
-    // Email sending can be integrated later with a service like Resend or SendGrid
+    // Send confirmation email via Resend
+    try {
+      await fetch(`${origin}/api/auth/send-login-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: data.user.id,
+          email: data.user.email,
+          deviceName: sessionResult.deviceName,
+          ipAddress,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to send login confirmation email:', err);
+      // Don't block login if email sending fails
+    }
   }
 
   // Onboarded users go straight in; everyone else picks a role first.
