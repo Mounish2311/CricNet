@@ -18,7 +18,7 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
           <Image
-            src="/cricnet-logo.png"
+            src="/cricnet-logo.png?v=2"
             alt="CricNet logo"
             width={40}
             height={40}
