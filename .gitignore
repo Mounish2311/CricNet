@@ -11,3 +11,5 @@ next-env.d.ts
 *.jpg
 *.jpeg
 CricNet*
+# Exception: allow public folder logo in git
+!public/cricnet-logo.png
