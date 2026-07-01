@@ -20,10 +20,10 @@ export default function Navbar() {
           <Image
             src="/cricnet-logo.png"
             alt="CricNet logo"
-            width={32}
-            height={32}
+            width={40}
+            height={40}
             priority
-            className="h-8 w-8 rounded-full overflow-hidden object-contain"
+            className="h-9 w-9 rounded-full overflow-hidden object-cover flex-shrink-0"
           />
           <span className="bg-gradient-to-r from-[#FF9933] via-white to-[#138808] bg-clip-text text-transparent">
             CricNet

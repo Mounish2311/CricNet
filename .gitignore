@@ -6,3 +6,8 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+# Local image files (logos, favicons) - use public/cricnet-logo.png checked in
+*.png
+*.jpg
+*.jpeg
+CricNet*
