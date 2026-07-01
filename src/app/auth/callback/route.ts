@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { generateDeviceFingerprint, parseDeviceName, checkAndRecordLoginSession } from '@/lib/auth/login-session';
 
 // OAuth (and email-link) callback: Supabase redirects here with a `code`.
 // We exchange it for a session, then route based on whether the user has
@@ -34,6 +35,39 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.user) {
     return NextResponse.redirect(`${origin}/login?error=oauth`);
+  }
+
+  // Extract device info for login session tracking
+  const userAgent = request.headers.get('user-agent') || '';
+  const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+  const deviceFingerprint = generateDeviceFingerprint(userAgent, ipAddress);
+  const deviceName = parseDeviceName(userAgent);
+
+  // Check if this is a new device and send confirmation email if needed
+  const sessionResult = await checkAndRecordLoginSession(data.user.id, {
+    fingerprint: deviceFingerprint,
+    userAgent,
+    ipAddress,
+    deviceName,
+  }, supabase);
+
+  // If new device, trigger confirmation email
+  if (sessionResult.isNewDevice) {
+    try {
+      await fetch(`${origin}/api/auth/send-login-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: data.user.id,
+          email: data.user.email,
+          deviceName: sessionResult.deviceName,
+          ipAddress,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to send login confirmation email:', err);
+      // Don't block login if email sending fails
+    }
   }
 
   // Onboarded users go straight in; everyone else picks a role first.
