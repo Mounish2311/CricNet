@@ -23,7 +23,7 @@ export default function Navbar() {
             width={32}
             height={32}
             priority
-            className="h-8 w-8 rounded-full object-contain"
+            className="h-8 w-8 rounded-full overflow-hidden object-contain"
           />
           <span className="bg-gradient-to-r from-[#FF9933] via-white to-[#138808] bg-clip-text text-transparent">
             CricNet
