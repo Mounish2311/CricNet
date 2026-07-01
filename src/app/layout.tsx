@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: 'CricNet — The Professional Network for Cricket',
   description:
     'Showcase your cricket talent, connect with scouts and coaches, follow live scores, and run verified tournaments.',
+  icons: {
+    icon: '/cricnet-logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
