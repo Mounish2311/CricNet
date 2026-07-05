@@ -34,6 +34,8 @@ A LinkedIn-style professional networking platform for the cricket ecosystem: tal
    - `0002_match_rounds.sql` — knockout/bracket round column
    - `0003_storage_buckets.sql` — creates the `avatars` and `videos` storage buckets with owner-only write policies (no manual bucket creation needed)
    - `0004_gated_messaging.sql` — restricts messaging to accepted connections
+   - `0005_login_sessions.sql` — tracks user login sessions to detect new devices and send confirmation emails
+   - `0006_fix_view_security.sql` — updates verified stats views to use SECURITY INVOKER (respects RLS policies)
 3. **Enable Google OAuth** (optional, for "Continue with Google"):
    - Supabase → Authentication → Providers → Google: enable and add your Google Cloud OAuth client ID + secret
    - In Google Cloud, set the authorized redirect URI to `https://<your-project>.supabase.co/auth/v1/callback`
